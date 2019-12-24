@@ -10,5 +10,3 @@ Infected escape requires two players. One infected and one uninfected. It is the
 - [ ] html version
 - [ ] telegram bot version 
 - [ ] Deeplearning program to analyze optimal play strategy
-
-Further analysis could analyze the optimum strategy and the 
