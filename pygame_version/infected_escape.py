@@ -151,4 +151,5 @@ def main():
             if restart_game_rectangle.collidepoint(mousex, mousey):
                 game_running = True
 
-main()
+if __name__ == __main__:
+    main()
