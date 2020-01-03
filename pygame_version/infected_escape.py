@@ -1,21 +1,21 @@
 #Turn based surround game
 #created by Inle Bush
 
-import pygame, sys
-
+import pygame, sys, copy, time
 from pygame.locals import *
-
+from random import randint
 from definitions import *
+
 
 def main():
     pygame.init()
 
     while True:
-        settings = Settings()
+        settings = Settings() #initializes settings
 
+        #Initializes variables
         mousex = 0
         mousey = 0 
-
         game_running = True
 
         screen = pygame.display.set_mode((settings.window_width, settings.window_height))
@@ -23,8 +23,13 @@ def main():
         
         game_board = game_array(settings.x_num_rect, settings.y_num_rect) #make initial game board
 
+        game_ai = ai(settings.y_num_rect, settings.x_num_rect, settings.player1_move, 2, "medium")#initiaizes game ai
         player = 1
         move_count = 1
+
+        display_board = game_board.return_board()
+        settings.draw_board(display_board, screen)
+        pygame.display.flip()
 
         #creates moves left and score objects with text class
         moves_left_text = text("Moves Left:  " + str(settings.player1_move), settings.default_font_size, settings.red, screen)
@@ -34,6 +39,7 @@ def main():
         moves_left_text_rectangle = moves_left_text.left_return_rectangle(settings.margin_width, settings.top_margin_height / 2)
         score_text_rectangle = score_text.right_return_rectangle(settings.window_width - settings.margin_width, settings.top_margin_height / 2)
         
+        #While the two score board rectangles collide, resize
         if pygame.Rect.colliderect(moves_left_text_rectangle, score_text_rectangle):
             while pygame.Rect.colliderect(moves_left_text_rectangle, score_text_rectangle):
                 # reduces size to fit
@@ -71,35 +77,32 @@ def main():
                 moves_left = settings.player1_move - (move_count - 1)%(settings.player1_move + settings.player2_move)
             else:
                 moves_left = (settings.player1_move + settings.player2_move) - (move_count - 1) % (settings.player1_move + settings.player2_move)
+            
+            if player != game_ai.ai_player: #Only looks for mouse clicks when it is the players turn
+                #runs through events
+                for event in pygame.event.get(): 
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        sys.exit()
 
-            #runs through events
-            for event in pygame.event.get(): 
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
+                    elif event.type == MOUSEBUTTONUP:
+                        mousex, mousey = event.pos
+                        mouse_clicked = True
 
-                elif event.type == MOUSEBUTTONUP:
-                    mousex, mousey = event.pos
-                    mouse_clicked = True
+                if mouse_clicked:
+                    boxx, boxy = settings.get_box_at_pixel(mousex, mousey)
+                    if boxx != None and boxy != None: #checks if click was in a rectangle
+                        if game_board.check_move_valid(player, boxx, boxy, move_count,settings.player1_move):
+                            game_board.change_rect_status(player, boxx, boxy)
+                            move_count += 1 #increases move counts
+                            
+                            game_running, score = game_board.running_check()#checks game running
 
-            if mouse_clicked:
-                boxx, boxy = settings.get_box_at_pixel(mousex, mousey)
-                if boxx != None and boxy != None: #checks if click was in a rectangle
-                    if game_board.check_move_valid(player, boxx, boxy, move_count,settings.player1_move):
-                        game_board.change_rect_status(player, boxx, boxy)
-                        move_count += 1 #increases move counts
-
-                        running_check = game_board.check_game_running()
-
-                        #if 2 can't expand, convert the rest of the board to 1
-                        if running_check == 2: 
-                            game_board.fill_all(1)
-                        elif running_check == 1:
-                            game_board.fill_all(2)
-                        #recounts score if game is not running
-                        if running_check != 0:
-                            score = game_board.count_score(1)
-                            game_running = False
+            else:
+                time.sleep(0.2) #waits while ai makes move
+                game_ai.make_move(game_board, move_count) #ai makes move
+                move_count += 1 #increases move count
+                game_running, score = game_board.running_check()#checks game running
 
             #switches player at end of turn
 
@@ -151,5 +154,5 @@ def main():
             if restart_game_rectangle.collidepoint(mousex, mousey):
                 game_running = True
 
-if __name__ == __main__:
+if __name__ == "__main__":
     main()

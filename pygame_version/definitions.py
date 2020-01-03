@@ -1,4 +1,5 @@
-import pygame
+import pygame, copy
+from random import randint
 
 class Settings:
     def __init__(self):#initialize settings
@@ -68,27 +69,26 @@ class Settings:
 
 
 class game_array:
-    def __init__(self,array_x_length, array_y_length):
+    def __init__(self, array_x_length, array_y_length):
         board_setup = []
 
         self.array_x_length = array_x_length
         self.array_y_length = array_y_length
 
         #board
-        outer_row = []
+        outer_row = [3 for x in range(array_x_length + 2)]
         middle_row = [3,3]
-        for number in range(0,array_x_length + 2):#creates outer row
-            outer_row.append(3)
 
-        for number in range(0,array_x_length):#creates inner row
+        for _ in range(0,array_x_length):#creates inner row
             middle_row.insert(1,0)
 
         board_setup.append(outer_row)
-        for x in range(0,array_y_length):
+        for _ in range(0,array_y_length):
             board_setup.append(list(middle_row))
         board_setup.append(outer_row)
 
-        self.board = board_setup
+        self.board = copy.deepcopy(board_setup)
+        self.board_setup = board_setup
 
     def change_rect_status(self, status, boxx, boxy): 
         '''changes the value in an entry in self.board'''
@@ -192,8 +192,39 @@ class game_array:
                     score +=  1
         return score
 
+    def valid_move_array(self, player, move_count, player1_move):
+        '''returns array with valid moves marked 1'''
+        move_array = copy.deepcopy(self.board_setup)#creates an empty array
+
+        for y_rect in range(1, self.array_y_length + 1): #checks all rows
+            for x_rect in range(1, self.array_x_length + 1): #checks all columns
+                if self.check_move_valid(player, x_rect, y_rect, move_count, player1_move):
+                    move_array[y_rect][x_rect] = 1
+
+        return move_array
+
+    def running_check(self):
+        '''Checks whether game is running'''
+        running_value = self.check_game_running()
+        
+        #if 2 or 1 can't expand, convert the rest of the board to 1 or 2
+        if running_value == 2: 
+            self.fill_all(1)
+        elif running_value == 1:
+            self.fill_all(2)
+
+        #recounts score and returns false if game is not running
+        score = self.count_score(1)
+        if running_value != 0:
+            return False, score
+        return True, score
+
+
+
+
 class text: #used for all text boxes
     def __init__(self, characters, text_size, color, screen, font = "freesansbold.ttf"):
+        '''initializes object in text class'''
         self.characters = characters
         self.text_size = round(text_size)
         self.color = color
@@ -232,6 +263,7 @@ class text: #used for all text boxes
 
 
     def right_return_rectangle(self,x_right,y_cent):
+        '''returns rectangle based on right,center coordinates'''
         font = pygame.font.Font(self.font, self.text_size) #creates a font object
         
         text_object = font.render(self.characters, True, self.color) #creates a text surface object
@@ -245,6 +277,7 @@ class text: #used for all text boxes
         return rectangle
 
     def left_return_rectangle(self,x_left,y_cent):
+        '''returns rectangle based on left,center coordinates'''
         font = pygame.font.Font(self.font, self.text_size) #creates a font object
         
         text_object = font.render(self.characters, True, self.color) #creates a text surface object
@@ -256,3 +289,129 @@ class text: #used for all text boxes
         rectangle.centery = y_cent
 
         return rectangle
+
+    
+        
+
+class ai:
+    def __init__(self, y_num_rect, x_num_rect, player1_move, ai_player = 0, level = "easy"):
+        '''initializes object in ai class'''
+        self.ai_player = ai_player #Who the ai is playing (0:none(pvp),1:ai plaing infected player, 2:ai playing noninfected player)
+        self.level = level #Level of ai (easy, medium, hard)
+        self.y_num_rect = y_num_rect
+        self.x_num_rect = x_num_rect
+        self.player1_move = player1_move
+        
+    def player1_easy(self, board, move_count):
+        '''Picks a random move from an array of valid moves'''
+        if move_count == 1: #If it is the first move, ai takes move in center
+            column = round(self.x_num_rect / 2)
+            row = round(self.y_num_rect/2)
+            return column, row
+    
+       #initializes move array
+        move_array = board.valid_move_array(1, move_count, self.player1_move)
+        
+        valid_move_number = 0 #Initializes value containing number of valid moves
+
+        for row in move_array:# Sums all valid moves in move_array
+            valid_move_number = valid_move_number + row.count(1)
+        
+        random_index = randint(1,valid_move_number) #gets random move number
+        
+        current_index = 0 #initializes current index to count valid move positions
+
+        #iterates through valid moves while increasing the corresponding index until the index is equal to the random index
+        for row in range(1, self.y_num_rect + 1): 
+            for column in range(1, self.x_num_rect + 1):
+                if move_array[row][column] == 1: #if move is valid
+                    current_index += 1 #increase current number
+                    if current_index == random_index: #if this matches with the random number generator
+                        return(column, row) #return the row and column of the chosen number 
+
+    def player2_easy(self, board, move_count):
+        '''Picks a random move from an array of valid moves'''
+        if move_count == self.player1_move + 1: #On the noninfected player's first move, picks a random rectangle adjacent to a infected square
+            return self.player1_easy(board, 2) 
+       
+       #initializes move array
+        move_array = board.valid_move_array(2, move_count, self.player1_move)
+        
+        valid_move_number = 0 #Initializes value containing number of valid moves
+
+        for row in move_array:# Sums all valid moves in move_array
+            valid_move_number = valid_move_number + row.count(1)
+        
+        random_index = randint(1, valid_move_number) #gets random move number
+        
+        current_index = 0 #initializes current index to count valid move positions
+
+        #iterates through valid moves while increasing the corresponding index until the index is equal to the random index
+        for row in range(1, self.y_num_rect + 1): 
+            for column in range(1, self.x_num_rect + 1):
+                if move_array[row][column] == 1: #if move is valid
+                    current_index += 1 #increase current number
+                    if current_index == random_index: #if this matches with the random number generator
+                        return(column, row) #return the row and column of the chosen number 
+
+    def player1_medium(self):
+        '''ranks moves based on their distance from the center and x'''
+
+    def player2_medium(self, board, move_count):
+        '''ranks moves based on their distance from the center and the nearest infected square'''
+        
+        move_array = board.valid_move_array(2, move_count, self.player1_move)
+
+        rank_table = copy.deepcopy(board.board_setup)
+
+        #Changes values of table containing the rankings of moves
+        for row in range(1, self.y_num_rect + 1):#iterates through possible boxes
+            for column in range(1, self.x_num_rect + 1):
+                if move_array[row][column] == 1: #If it is a valid move
+                    rank_table[row][column] = (((self.y_num_rect + 1)/2 - row)**2 + ((self.x_num_rect + 1)/2 - column)**2) ** 0.5 #Calculates distance to the center 
+                    
+                    #finds lowest distance 
+                    lowest_dist = 10000 #initializes high lowest distance
+                    for board_row in range(1, self.y_num_rect + 1):
+                        for board_column in range(1, self.x_num_rect + 1):
+                            if board.board[board_row][board_column] == 1:
+                                dist_to_infected = ((row - board_row)**2 + ((column - board_column)**2)) ** 0.5
+                                lowest_dist = min(lowest_dist, dist_to_infected) #compares current distance and previous distance
+                    rank_table[row][column] = rank_table[row][column] + 100*lowest_dist #adds lowest distance(weighted higher) to rank_table box
+        
+        print("\n")
+        for row in rank_table:
+            print(row)
+        #Finds lowest move
+        lowest_ranking = 100000 #Initializes high lowest ranking
+        for row in range(1, self.y_num_rect + 1):
+            for column in range(1, self.x_num_rect + 1):
+                if move_array[row][column] == 1:
+                    if rank_table[row][column] < lowest_ranking:
+                        best_move = (column, row)
+                        lowest_ranking = rank_table[row][column]
+        return best_move
+                    
+    def player2_hard(self):
+        print("Hello")
+    def player2_hard(self):
+        print("Yup")
+    def make_move(self, board, move_count):
+        '''changes board'''
+        if self.level == "easy":
+            if self.ai_player == 1:
+                boxx , boxy = self.player1_easy(board, move_count)
+            else:
+                boxx, boxy = self.player2_easy(board, move_count)
+        elif self.level == "medium":
+            if self.ai_player == 1:
+                boxx, boxy = self.player1_medium(board, move_count)
+            else:
+                boxx, boxy = self.player2_medium(board, move_count)
+
+        else: #if ai level = "hard"
+            if self.ai_player == 1:
+                self.player1_hard(board, move_count)
+            else:
+                self.player2_hard(board, move_count)
+        board.change_rect_status(self.ai_player, boxx, boxy) #change the status of the chosen box in the board
