@@ -1,12 +1,15 @@
 # Infected Escape
- Infected Escape is a simple turn based PvP surround game. I have finished a terminal and pygame version and hope to complete a version that runs through html5 and a telegram bot that allows play in conversation.
+ Infected Escape is a simple turn based PvP surround game run on Python3 through Pygame.
 
 ## Rules
-Infected escape requires two players. One infected and one uninfected. It is the objective of the infected player to increase their territory, and the objective of the uninfected player to limit the infected player's territory. On an x by y rectangular board, the infected player chooses a square to begin from. After the first round, the uninfected player chooses a square to begin from. Each round the infected player expands their area i times to adjacent squares then the uninfected player expands n times to adjacent squares. The game ends when either player is surrounded and cannot expand their territory. 
+1. Infected escape requires two players.One infected and one uninfected.
+2. It is the objective of the infected player to increase their territory, and the objective of the uninfected player to limit the infected player's territory. 
+3. On an **X** by **Y** rectangular board, the infected player chooses a square to begin from. 
+4. Then, the uninfected player chooses a square to begin from. 
+5. Each round the infected player expands their area **i** times to adjacent squares then the uninfected player expands **j** times to adjacent squares. The game ends when either player is surrounded and cannot expand their territory.
 
-## Current Versions
-- [X] terminal version
-- [X] pygame version
-- [ ] html version
-- [ ] telegram bot version 
-- [ ] Deeplearning program to analyze optimal play strategy
+## To play:
+Infected escape requires Python3 as well as pygame to be downloaded.
+
+The game can be started by running:
+python3 
